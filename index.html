@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>リハレコ Ultra Pro</title>
+  <title>リハレコ Ultra Pro v2</title>
   <style>
     :root { --primary: #007aff; --bg: #f2f2f7; --reha: #ff9500; --ns: #34c759; --soap: #5856d6; }
     body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #1c1c1e; }
@@ -14,7 +14,7 @@
     .card { background: white; border-radius: 20px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; margin-bottom: 20px; }
     .badge { display: inline-block; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 15px; background: #eee; }
     .listening { background: #ff3b30; color: white; animation: blink 1s infinite; }
-    .live-text { min-height: 100px; border: 1px solid #eee; padding: 15px; font-size: 16px; text-align: left; background: #fafafa; border-radius: 12px; margin-bottom: 15px; overflow-y: auto; }
+    .live-text { min-height: 100px; border: 1px solid #eee; padding: 15px; font-size: 16px; text-align: left; background: #fafafa; border-radius: 12px; margin-bottom: 15px; overflow-y: auto; white-space: pre-wrap; }
     .btn { width: 100%; border: none; border-radius: 14px; padding: 16px; font-size: 17px; font-weight: bold; cursor: pointer; margin-bottom: 10px; transition: 0.2s; }
     .btn-main { background: var(--primary); color: white; }
     .btn-import { background: #8e8e93; color: white; font-size: 13px; padding: 8px; }
@@ -38,19 +38,15 @@
 
   <div class="card">
     <div id="badge" class="badge">待機中</div>
-    
-    <button onclick="importLastReport()" class="btn btn-import">
-      📥 前回記録をコピペで覚えさせる
-    </button>
-
+    <button onclick="importLastReport()" class="btn btn-import">📥 前回記録をコピペで覚えさせる</button>
     <div id="live-text" class="live-text">「開始」で録音、「終了」で解析</div>
-    <button id="mic-btn" class="btn btn-main">マイクを起動（自動）</button>
+    <button id="mic-btn" class="btn btn-main">マイクを起動</button>
   </div>
 
   <div id="result-area" class="card">
-    <h3 style="margin-top:0; font-size:16px;">生成結果</h3>
+    <h3 style="margin-top:0; font-size:16px;">生成結果（LINE送信済み）</h3>
     <div id="final-output" class="output"></div>
-    <button id="copy-btn" class="btn btn-main" style="margin-top:15px; background:#34c759;">コピーして完了</button>
+    <button id="copy-btn" class="btn btn-main" style="margin-top:15px; background:#34c759;">内容をコピー</button>
   </div>
 </div>
 
@@ -85,13 +81,12 @@
     document.getElementById('fmt-soap').classList.toggle('active', fmt === 'SOAP');
   }
 
-  // 初回データ投入用
   function importLastReport() {
-    const text = prompt("看護ソフトからコピーした「前回の記録」を貼り付けてください。");
+    const text = prompt("前回の記録を貼り付けてください。");
     if (text) {
       localStorage.setItem('last_report', text);
       document.getElementById('live-text').innerText = "【前回の記録を記憶しました】\n" + text;
-      alert("記憶完了！次から「おかわりなし」が使えます。");
+      alert("記憶完了！");
     }
   }
 
@@ -101,18 +96,13 @@
       let text = event.results[i][0].transcript;
       if (event.results[i].isFinal) {
         if (text.includes("開始")) { transcriptData = ""; document.getElementById('badge').className = "badge listening"; return; }
-        
-        // 音声コマンド
         if (text.includes("ソープ") || text.includes("SOAP")) { setFormat('SOAP'); }
         if (text.includes("エフディー") || text.includes("FDAR")) { setFormat('FDAR'); }
-        
         if (text.includes("おかわりなし")) { 
           const last = localStorage.getItem('last_report');
           if(last) { transcriptData = last; analyze('前回コピー'); }
-          else { alert("前回の記録が記憶されていません。"); }
           return;
         }
-        
         if (text.includes("終了") || text.includes("終わり")) { analyze(formatMode); return; }
         transcriptData += text;
       } else { interim += text; }
@@ -126,12 +116,19 @@
     document.getElementById('badge').className = "badge";
     
     const lastReport = localStorage.getItem('last_report') || "なし";
-    const prompt = `${jobMode}専門職として記録作成。
-    【形式】: ${formatMode}
-    【前回】: ${lastReport}
-    【今回メモ】: ${transcriptData || document.getElementById('live-text').innerText}
-    ※「おかわり」は前回をそのまま、「変更点」は前回をベースに修正。
-    ※PT/OT/ST/NSの視点を自動判別。`;
+    const prompt = `あなたは非常に優秀な${jobMode}専門職です。
+以下の【今回メモ】を解析し、【形式】に従って記録を作成してください。
+
+【形式】 : ${formatMode}
+【前回】 : ${lastReport}
+【今回メモ】 : ${transcriptData || document.getElementById('live-text').innerText}
+
+■特別な指示：
+1. 「注意」「重要」「※」と言及された内容は、記録の最上段に【重要・注意点】として※マークを付けて目立つように配置してください。
+2. 「箇条書き」という指示があれば、その部分は「・」や「1.」を用いたマークダウン形式で整理してください。
+3. 「雑談だけど」と言及された内容は、記録の最後に【特記事項・エピソード】として、現場の雰囲気が伝わるように記述してください。
+4. 「おかわり」は前回をそのまま、「変更点」は前回をベースに修正してください。
+5. PT/OT/ST/NSの視点を自動判別し、挨拶は抜きで記録のみ出力してください。`;
 
     try {
       const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`, {
@@ -144,7 +141,7 @@
       
       document.getElementById('final-output').innerText = result;
       document.getElementById('result-area').style.display = 'block';
-      localStorage.setItem('last_report', result); // 今回分を次回のために保存
+      localStorage.setItem('last_report', result);
       
       if(GAS_URL.startsWith('http')) {
         fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ message: result }) });
@@ -153,10 +150,10 @@
     } catch (e) { alert("解析エラーが発生しました。"); }
   }
 
-  document.getElementById('mic-btn').onclick = () => { recognition.start(); document.getElementById('badge').innerText = "録音待機中..."; };
+  document.getElementById('mic-btn').onclick = () => { recognition.start(); document.getElementById('badge').innerText = "録音中..."; };
   document.getElementById('copy-btn').onclick = () => {
     navigator.clipboard.writeText(document.getElementById('final-output').innerText);
-    alert("コピー完了！");
+    alert("コピー完了！看護ソフトへ貼り付けてください。");
   };
 </script>
 </body>
