@@ -3,97 +3,100 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>訪問リハ記録AI：リハレコ Dual</title>
+  <title>リハレコ Pro</title>
   <style>
-    :root { --primary: #007aff; --soap: #5856d6; --fdar: #ff9500; --bg: #f2f2f7; }
-    body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #1c1c1e; }
-    .container { max-width: 600px; margin: 0 auto; }
-    h1 { font-size: 20px; text-align: center; margin-bottom: 20px; }
-    .status-card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-align: center; margin-bottom: 20px; }
-    .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 10px; }
-    .waiting { background: #e5e5ea; color: #8e8e93; }
+    :root { --primary: #007aff; --bg: #f2f2f7; --reha: #ff9500; --ns: #34c759; }
+    body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 20px; }
+    .container { max-width: 500px; margin: 0 auto; }
+    .mode-selector { display: flex; background: #e5e5ea; border-radius: 12px; padding: 4px; margin-bottom: 20px; }
+    .mode-btn { flex: 1; border: none; padding: 10px; border-radius: 10px; font-weight: bold; cursor: pointer; background: none; color: #8e8e93; transition: 0.3s; }
+    .mode-btn.active { background: white; color: #000; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .card { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; }
+    .badge { display: inline-block; padding: 5px 15px; border-radius: 20px; font-size: 13px; font-weight: bold; margin-bottom: 15px; background: #eee; }
     .listening { background: #ff3b30; color: white; animation: blink 1s infinite; }
-    .live-text { min-height: 80px; border: 1px inset #eee; padding: 10px; font-size: 15px; color: #3a3a3c; text-align: left; background: #fafafa; border-radius: 8px; margin-bottom: 15px; }
-    .result-card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-top: 20px; display: none; }
-    .output { white-space: pre-wrap; background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #ddd; font-size: 14px; line-height: 1.6; margin-bottom: 10px; }
-    .btn { width: 100%; border: none; border-radius: 12px; padding: 16px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-bottom: 10px; }
-    .btn-mic { background: var(--primary); color: white; }
-    .btn-fdar { background: var(--fdar); color: white; }
-    .btn-soap { background: var(--soap); color: white; }
-    .btn-copy { background: #34c759; color: white; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+    .live-text { min-height: 100px; border: 1px solid #eee; padding: 15px; font-size: 16px; text-align: left; background: #fafafa; border-radius: 12px; margin-bottom: 20px; }
+    .btn { width: 100%; border: none; border-radius: 14px; padding: 18px; font-size: 17px; font-weight: bold; cursor: pointer; margin-bottom: 12px; transition: 0.2s; }
+    .btn-main { background: var(--primary); color: white; }
+    .btn-sub { color: white; }
+    .reha-color { background: var(--reha); }
+    .ns-color { background: var(--ns); }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    #result-area { display: none; margin-top: 25px; text-align: left; }
+    .output { white-space: pre-wrap; background: #f9f9f9; padding: 15px; border-radius: 12px; border: 1px solid #ddd; font-size: 15px; line-height: 1.7; }
+    @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
   </style>
 </head>
 <body>
 <div class="container">
-  <h1>訪問リハ記録AI</h1>
-  <div class="status-card">
-    <div id="badge" class="status-badge waiting">待機中</div>
-    <div id="live-text" class="live-text">「開始」で録音、「終了」で解析</div>
-    <button id="start-btn" class="btn btn-mic">マイクを起動（自動モード）</button>
+  <div class="mode-selector">
+    <button id="mode-reha" class="mode-btn active" onclick="setMode('リハビリ')">リハビリ</button>
+    <button id="mode-ns" class="mode-btn" onclick="setMode('看護')">看護</button>
+  </div>
+  <div class="card">
+    <div id="badge" class="badge">待機中</div>
+    <div id="live-text" class="live-text">「開始」で録音</div>
+    <button id="mic-btn" class="btn btn-main">マイクを起動（自動モード）</button>
     <div class="grid">
-      <button onclick="analyze('FDAR')" class="btn btn-fdar">FDAR作成</button>
-      <button onclick="analyze('SOAP')" class="btn btn-soap">SOAP作成</button>
+      <button onclick="analyze('FDAR')" id="fdar-btn" class="btn btn-sub reha-color">FDAR作成</button>
+      <button onclick="analyze('SOAP')" id="soap-btn" class="btn btn-sub ns-color">SOAP作成</button>
     </div>
   </div>
-  <div id="result-area" class="result-card">
-    <h3 id="result-title">生成結果</h3>
+  <div id="result-area" class="card">
     <div id="final-output" class="output"></div>
-    <button id="copy-btn" class="btn btn-copy">結果をコピー</button>
+    <button id="copy-btn" class="btn btn-main" style="margin-top:15px;">結果をコピー & LINE送信</button>
   </div>
 </div>
 
 <script>
-  const API_KEY = 'AIzaSyB1UGzxS3ciILynSi95amjR8kOU8kuWf_8'; 
-  const badge = document.getElementById('badge');
-  const liveText = document.getElementById('live-text');
-  const finalOutput = document.getElementById('final-output');
-  const resultArea = document.getElementById('result-area');
+  const API_KEY = 'AIzaSyB1UGzxS3ciILynSi95amjR8kOU8kuWf_8';
+  const GAS_URL = 'あなたのGASのURL'; // LINE送信用のGASができたらここに貼る
   
+  let currentMode = 'リハビリ';
+  let transcriptData = "";
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   const recognition = new SpeechRecognition();
   recognition.lang = 'ja-JP';
   recognition.continuous = true;
   recognition.interimResults = true;
 
-  let transcriptData = "";
+  function setMode(mode) {
+    currentMode = mode;
+    document.getElementById('mode-reha').classList.toggle('active', mode === 'リハビリ');
+    document.getElementById('mode-ns').classList.toggle('active', mode === '看護');
+    document.getElementById('badge').innerText = mode + "モード";
+  }
 
   recognition.onresult = (event) => {
-    let interimTranscript = "";
+    let interim = "";
     for (let i = event.resultIndex; i < event.results.length; i++) {
       let text = event.results[i][0].transcript;
       if (event.results[i].isFinal) {
-        if (text.includes("開始")) {
-          transcriptData = "";
-          badge.innerText = "記録中";
-          badge.className = "status-badge listening";
-          return;
+        if (text.includes("開始")) { transcriptData = ""; document.getElementById('badge').className = "badge listening"; return; }
+        if (text.includes("おかわりなし")) { 
+            const last = localStorage.getItem('last_report');
+            if(last) { transcriptData = last; analyze('前回コピー'); }
+            return;
         }
-        if (text.includes("終了") || text.includes("終わり")) {
-          analyze('FDAR');
-          return;
-        }
+        if (text.includes("終了") || text.includes("終わり")) { analyze('FDAR'); return; }
         transcriptData += text;
-      } else {
-        interimTranscript += text;
-      }
+      } else { interim += text; }
     }
-    liveText.innerText = transcriptData + interimTranscript;
+    document.getElementById('live-text').innerText = transcriptData + interim;
   };
 
-  recognition.onerror = (event) => {
-    alert("音声認識エラー: " + event.error);
-  };
-
-  async function analyze(mode) {
-    if(!transcriptData && liveText.innerText.length < 5) return alert("内容が空です。");
+  async function analyze(format) {
     recognition.stop();
-    badge.innerText = `${mode}解析中...`;
-    badge.className = "status-badge waiting";
-
-    const formatInstruction = (mode === 'SOAP') ? "S/O/A/P形式" : "F/D/A/R形式";
-    const prompt = `訪問リハ記録員として、以下の音声メモから専門的な${formatInstruction}を作成してください。日付は${new Date().toLocaleDateString('ja-JP')}。利用者名はイニシャル（例：S様）に。メモ："${transcriptData || liveText.innerText}"`;
+    document.getElementById('badge').innerText = "解析中...";
+    
+    const lastReport = localStorage.getItem('last_report') || "なし";
+    const prompt = `${currentMode}の専門職として記録を作成してください。
+    【前回内容】: ${lastReport}
+    【今回の発言】: ${transcriptData || document.getElementById('live-text').innerText}
+    ルール:
+    1. ${format}形式で出力。
+    2. PT/OT/ST/NSの視点を適切に使い分ける。
+    3. 「おかわり」や「変更点」の指示があれば前回をベースに修正。
+    4. 挨拶不要、記録のみ出力。`;
 
     try {
       const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`, {
@@ -102,23 +105,22 @@
         body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
       });
       const data = await resp.json();
-      finalOutput.innerText = data.candidates[0].content.parts[0].text;
-      resultArea.style.display = 'block';
-      badge.innerText = "完了";
-      resultArea.scrollIntoView({behavior: 'smooth'});
-    } catch (e) {
-      alert("エラー。APIキーを確認してください。");
-      badge.innerText = "待機中";
-    }
+      const result = data.candidates[0].content.parts[0].text;
+      
+      document.getElementById('final-output').innerText = result;
+      document.getElementById('result-area').style.display = 'block';
+      localStorage.setItem('last_report', result); // 次回のために保存
+      
+      // LINE送信処理 (GAS URLがある場合)
+      if(GAS_URL !== 'あなたのGASのURL') {
+        fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ message: result }) });
+      }
+    } catch (e) { alert("エラーが発生しました。"); }
   }
 
-  document.getElementById('start-btn').onclick = () => {
-    recognition.start();
-    badge.innerText = "マイク起動：『開始』と話してください";
-  };
-
+  document.getElementById('mic-btn').onclick = () => { recognition.start(); document.getElementById('badge').innerText = "マイク起動中..."; };
   document.getElementById('copy-btn').onclick = () => {
-    navigator.clipboard.writeText(finalOutput.innerText);
+    navigator.clipboard.writeText(document.getElementById('final-output').innerText);
     alert("コピー完了！");
   };
 </script>
