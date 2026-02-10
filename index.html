@@ -1,160 +1,135 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>リハレコ Ultra Pro v2</title>
-  <style>
-    :root { --primary: #007aff; --bg: #f2f2f7; --reha: #ff9500; --ns: #34c759; --soap: #5856d6; }
-    body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #1c1c1e; }
-    .container { max-width: 500px; margin: 0 auto; }
-    .mode-selector { display: flex; background: #e5e5ea; border-radius: 12px; padding: 4px; margin-bottom: 10px; }
-    .mode-btn { flex: 1; border: none; padding: 10px; border-radius: 10px; font-weight: bold; cursor: pointer; background: none; color: #8e8e93; font-size: 14px; }
-    .mode-btn.active { background: white; color: #000; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    .card { background: white; border-radius: 20px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; margin-bottom: 20px; }
-    .badge { display: inline-block; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 15px; background: #eee; }
-    .listening { background: #ff3b30; color: white; animation: blink 1s infinite; }
-    .live-text { min-height: 100px; border: 1px solid #eee; padding: 15px; font-size: 16px; text-align: left; background: #fafafa; border-radius: 12px; margin-bottom: 15px; overflow-y: auto; white-space: pre-wrap; }
-    .btn { width: 100%; border: none; border-radius: 14px; padding: 16px; font-size: 17px; font-weight: bold; cursor: pointer; margin-bottom: 10px; transition: 0.2s; }
-    .btn-main { background: var(--primary); color: white; }
-    .btn-import { background: #8e8e93; color: white; font-size: 13px; padding: 8px; }
-    .format-btn.active.fdar { background: var(--reha); color: white; }
-    .format-btn.active.soap { background: var(--soap); color: white; }
-    #result-area { display: none; text-align: left; }
-    .output { white-space: pre-wrap; background: #f9f9f9; padding: 15px; border-radius: 12px; border: 1px solid #ddd; font-size: 15px; line-height: 1.6; }
-    @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>爆速記録くん</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background: #f0f2f5; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .btn { border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
+        .btn-main { background: #007bff; color: white; }
+        .btn-import { background: #28a745; color: white; }
+        .live-text { border: 1px solid #ccc; min-height: 100px; padding: 10px; border-radius: 8px; margin: 10px 0; background: #fff; }
+        .output { background: #e9ecef; padding: 15px; border-radius: 8px; white-space: pre-wrap; margin-top: 10px; }
+        .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; background: #6c757d; color: white; font-size: 12px; }
+    </style>
 </head>
 <body>
-<div class="container">
-  <div class="mode-selector">
-    <button id="mode-reha" class="mode-btn" onclick="setJob('リハビリ')">リハビリ</button>
-    <button id="mode-ns" class="mode-btn" onclick="setJob('看護')">看護</button>
-  </div>
-  <div class="mode-selector">
-    <button id="fmt-fdar" class="mode-btn format-btn fdar" onclick="setFormat('FDAR')">FDAR形式</button>
-    <button id="fmt-soap" class="mode-btn format-btn soap" onclick="setFormat('SOAP')">SOAP形式</button>
-  </div>
 
-  <div class="card">
-    <div id="badge" class="badge">待機中</div>
-    <button onclick="importLastReport()" class="btn btn-import">📥 前回記録をコピペで覚えさせる</button>
-    <div id="live-text" class="live-text">「開始」で録音、「終了」で解析</div>
-    <button id="mic-btn" class="btn btn-main">マイクを起動</button>
-  </div>
+    <h2>爆速記録くん</h2>
+    <p style="color: red; font-weight: bold;">※個人情報は入力しないでください（A様などと呼称）</p>
 
-  <div id="result-area" class="card">
-    <h3 style="margin-top:0; font-size:16px;">生成結果（LINE送信済み）</h3>
-    <div id="final-output" class="output"></div>
-    <button id="copy-btn" class="btn btn-main" style="margin-top:15px; background:#34c759;">内容をコピー</button>
-  </div>
-</div>
+    <div class="card">
+        <div id="badge" class="badge">待機中</div>
+        <button onclick="importLastReport()" class="btn btn-import">📩 前回記録をコピペで覚えさせる</button>
+        <div id="live-text" class="live-text">「開始」で録音、「終了」で解析</div>
+        <button id="mic-btn" class="btn btn-main">マイクを起動</button>
+    </div>
+
+    <div id="result-area" class="card">
+        <h3 style="margin-top:0; font-size:16px;">生成結果</h3>
+        <div id="final-output" class="output"></div>
+        <button id="copy-btn" class="btn btn-main" style="margin-top:15px; background:#34c759;">LINEに送信</button>
+    </div>
 
 <script>
-  // ★設定：ここに自分の情報を入れてください
-  const API_KEY = 'AIzaSyB1UGzxS3ciILynSi95amjR8kOU8kuWf_8'; 
-  const GAS_URL = 'あなたのGASのURL'; 
+    // ★設定：ここに自分の情報を入れてください
+    const API_KEY = 'AIzaSyB1UGzxS3ciILynSi95amjR8k0U8kuWf_8'; 
+    const GAS_URL = 'https://script.google.com/macros/s/AKfcybYba7ztmN0NQBWk7zbcoE00yE0uFE93skKwXachCU3R0inmZroALc3z7g9nqSKEDulWQ/exec'; 
 
-  let jobMode = localStorage.getItem('jobMode') || 'リハビリ';
-  let formatMode = localStorage.getItem('formatMode') || 'FDAR';
-  let transcriptData = "";
+    let transcriptData = "";
+    const micBtn = document.getElementById('mic-btn');
+    const liveText = document.getElementById('live-text');
+    const badge = document.getElementById('badge');
+    const finalOutput = document.getElementById('final-output');
+    const copyBtn = document.getElementById('copy-btn');
 
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const recognition = new SpeechRecognition();
-  recognition.lang = 'ja-JP';
-  recognition.continuous = true;
-  recognition.interimResults = true;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'ja-JP';
+    recognition.continuous = true;
+    recognition.interimResults = true;
 
-  window.onload = () => { setJob(jobMode); setFormat(formatMode); };
+    let isRecording = false;
 
-  function setJob(job) {
-    jobMode = job;
-    localStorage.setItem('jobMode', job);
-    document.getElementById('mode-reha').classList.toggle('active', job === 'リハビリ');
-    document.getElementById('mode-ns').classList.toggle('active', job === '看護');
-  }
-
-  function setFormat(fmt) {
-    formatMode = fmt;
-    localStorage.setItem('formatMode', fmt);
-    document.getElementById('fmt-fdar').classList.toggle('active', fmt === 'FDAR');
-    document.getElementById('fmt-soap').classList.toggle('active', fmt === 'SOAP');
-  }
-
-  function importLastReport() {
-    const text = prompt("前回の記録を貼り付けてください。");
-    if (text) {
-      localStorage.setItem('last_report', text);
-      document.getElementById('live-text').innerText = "【前回の記録を記憶しました】\n" + text;
-      alert("記憶完了！");
-    }
-  }
-
-  recognition.onresult = (event) => {
-    let interim = "";
-    for (let i = event.resultIndex; i < event.results.length; i++) {
-      let text = event.results[i][0].transcript;
-      if (event.results[i].isFinal) {
-        if (text.includes("開始")) { transcriptData = ""; document.getElementById('badge').className = "badge listening"; return; }
-        if (text.includes("ソープ") || text.includes("SOAP")) { setFormat('SOAP'); }
-        if (text.includes("エフディー") || text.includes("FDAR")) { setFormat('FDAR'); }
-        if (text.includes("おかわりなし")) { 
-          const last = localStorage.getItem('last_report');
-          if(last) { transcriptData = last; analyze('前回コピー'); }
-          return;
+    micBtn.addEventListener('click', () => {
+        if (!isRecording) {
+            recognition.start();
+            micBtn.textContent = "録音を終了して解析";
+            micBtn.style.background = "#dc3545";
+            badge.textContent = "録音中...";
+            badge.style.background = "#dc3545";
+            isRecording = true;
+        } else {
+            recognition.stop();
+            micBtn.textContent = "解析中...";
+            micBtn.disabled = true;
+            isRecording = false;
         }
-        if (text.includes("終了") || text.includes("終わり")) { analyze(formatMode); return; }
-        transcriptData += text;
-      } else { interim += text; }
+    });
+
+    recognition.onresult = (event) => {
+        let interimTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            if (event.results[i].isFinal) {
+                transcriptData += event.results[i][0].transcript;
+            } else {
+                interimTranscript += event.results[i][0].transcript;
+            }
+        }
+        liveText.innerHTML = transcriptData + '<i style="color:red;">' + interimTranscript + '</i>';
+    };
+
+    recognition.onend = async () => {
+        if (!isRecording && transcriptData) {
+            await analyzeText(transcriptData);
+        }
+    };
+
+    async function analyzeText(text) {
+        const prompt = `以下のリハビリ記録をSOAP形式で専門的に整形してください。
+        「お変わりなし」と言われたら、前回の状態を維持し、リスク管理も問題ない旨を肉付けしてください。
+        
+        入力テキスト：${text}`;
+
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+            method: 'POST',
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        const data = await res.json();
+        const resultText = data.candidates[0].content.parts[0].text;
+        
+        finalOutput.textContent = resultText;
+        micBtn.textContent = "マイクを起動";
+        micBtn.disabled = false;
+        badge.textContent = "解析完了";
+        badge.style.background = "#28a745";
     }
-    document.getElementById('live-text').innerText = transcriptData + interim;
-  };
 
-  async function analyze(modeName) {
-    recognition.stop();
-    document.getElementById('badge').innerText = "AI解析中...";
-    document.getElementById('badge').className = "badge";
-    
-    const lastReport = localStorage.getItem('last_report') || "なし";
-    const prompt = `あなたは非常に優秀な${jobMode}専門職です。
-以下の【今回メモ】を解析し、【形式】に従って記録を作成してください。
+    copyBtn.addEventListener('click', async () => {
+        const textToSend = finalOutput.textContent;
+        if (!textToSend) return alert("送信する内容がありません");
 
-【形式】 : ${formatMode}
-【前回】 : ${lastReport}
-【今回メモ】 : ${transcriptData || document.getElementById('live-text').innerText}
+        copyBtn.textContent = "送信中...";
+        try {
+            await fetch(GAS_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: textToSend })
+            });
+            alert("LINEに送信リクエストを送りました！");
+        } catch (e) {
+            alert("エラーが発生しました");
+        }
+        copyBtn.textContent = "LINEに送信";
+    });
 
-■特別な指示：
-1. 「注意」「重要」「※」と言及された内容は、記録の最上段に【重要・注意点】として※マークを付けて目立つように配置してください。
-2. 「箇条書き」という指示があれば、その部分は「・」や「1.」を用いたマークダウン形式で整理してください。
-3. 「雑談だけど」と言及された内容は、記録の最後に【特記事項・エピソード】として、現場の雰囲気が伝わるように記述してください。
-4. 「おかわり」は前回をそのまま、「変更点」は前回をベースに修正してください。
-5. PT/OT/ST/NSの視点を自動判別し、挨拶は抜きで記録のみ出力してください。`;
-
-    try {
-      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-      });
-      const data = await resp.json();
-      const result = data.candidates[0].content.parts[0].text;
-      
-      document.getElementById('final-output').innerText = result;
-      document.getElementById('result-area').style.display = 'block';
-      localStorage.setItem('last_report', result);
-      
-      if(GAS_URL.startsWith('http')) {
-        fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ message: result }) });
-      }
-      document.getElementById('badge').innerText = "完了";
-    } catch (e) { alert("解析エラーが発生しました。"); }
-  }
-
-  document.getElementById('mic-btn').onclick = () => { recognition.start(); document.getElementById('badge').innerText = "録音中..."; };
-  document.getElementById('copy-btn').onclick = () => {
-    navigator.clipboard.writeText(document.getElementById('final-output').innerText);
-    alert("コピー完了！看護ソフトへ貼り付けてください。");
-  };
+    function importLastReport() {
+        const val = prompt("前回の記録を貼り付けてください");
+        if (val) transcriptData = "【前回記録】" + val + "\n\n";
+    }
 </script>
 </body>
 </html>
