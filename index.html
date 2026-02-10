@@ -11,7 +11,7 @@
         .btn-main { background: #007bff; color: white; }
         .btn-import { background: #28a745; color: white; }
         .live-text { border: 1px solid #ccc; min-height: 100px; padding: 10px; border-radius: 8px; margin: 10px 0; background: #fff; }
-        .output { background: #e9ecef; padding: 15px; border-radius: 8px; white-space: pre-wrap; margin-top: 10px; }
+        .output { background: #e9ecef; padding: 15px; border-radius: 8px; white-space: pre-wrap; margin-top: 10px; min-height: 50px; }
         .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; background: #6c757d; color: white; font-size: 12px; }
     </style>
 </head>
@@ -34,7 +34,7 @@
     </div>
 
 <script>
-    // ★設定：ここに自分の情報を入れてください
+    // 設定
     const API_KEY = 'AIzaSyB1UGzxS3ciILynSi95amjR8k0U8kuWf_8'; 
     const GAS_URL = 'https://script.google.com/macros/s/AKfcybYba7ztmN0NQBWk7zbcoE00yE0uFE93skKwXachCU3R0inmZroALc3z7g9nqSKEDulWQ/exec'; 
 
@@ -55,6 +55,7 @@
 
     micBtn.addEventListener('click', () => {
         if (!isRecording) {
+            transcriptData = ""; // 新しく録音するたびにリセット
             recognition.start();
             micBtn.textContent = "録音を終了して解析";
             micBtn.style.background = "#dc3545";
@@ -93,18 +94,24 @@
         
         入力テキスト：${text}`;
 
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
-            method: 'POST',
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-        });
-        const data = await res.json();
-        const resultText = data.candidates[0].content.parts[0].text;
-        
-        finalOutput.textContent = resultText;
-        micBtn.textContent = "マイクを起動";
-        micBtn.disabled = false;
-        badge.textContent = "解析完了";
-        badge.style.background = "#28a745";
+        try {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+            const data = await res.json();
+            const resultText = data.candidates[0].content.parts[0].text;
+            
+            finalOutput.textContent = resultText;
+            badge.textContent = "解析完了";
+            badge.style.background = "#28a745";
+        } catch (e) {
+            alert("解析エラーが発生しました。APIキーを確認してください。");
+        } finally {
+            micBtn.textContent = "マイクを起動";
+            micBtn.disabled = false;
+        }
     }
 
     copyBtn.addEventListener('click', async () => {
